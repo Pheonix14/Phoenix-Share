@@ -35,7 +35,7 @@ Before running the system, ensure that you have the following installed:
 4. On the upload page, select the file you want to share and click the "Upload" button.
 5. Once the upload is successful, you will be provided with a download link and a QR code for sharing.
 6. Share the download link or QR code with others to allow them to download the file.
-7. The file will be automatically deleted from the server after a set period of time or when downloaded.
+7. The file will be automatically deleted from the server after a set period of time.
 
 ## Customization
 

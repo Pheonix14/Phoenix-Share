@@ -8,9 +8,15 @@ const qrCode = require('qrcode');
 const config = require('./config.json');
 const db = require('quick.db');
 const bcrypt = require('bcrypt');
-
+const session = require('express-session');
 
 const app = express();
+
+app.use(session({
+  secret: config.secret_key,
+  resave: false,
+  saveUninitialized: true
+}));
 
 app.use(bodyParser.urlencoded({ extended: false }));
 // Set the upload limit (default: 200MB)
@@ -45,6 +51,7 @@ app.post('/login', (req, res) => {
 
     if (result) {
       // Passwords match, user is authenticated
+      req.session.loggedIn = true; // Save authentication state to session
       return res.redirect('/upload');
     } else {
       // Passwords do not match
@@ -94,14 +101,27 @@ app.post('/create-account', (req, res) => {
     });
   });
 });
-    
+
+// Authentication middleware
+function authenticate(req, res, next) {
+  // Check if the user is logged in
+  if (req.session && req.session.loggedIn) {
+    // User is authenticated, allow access to the next middleware or route
+    next();
+  } else {
+    // User is not logged in, redirect to the login page
+    res.redirect('/');
+  }
+    }
+
+
 // Serve the upload form page
-app.get('/upload', (req, res) => {
+app.get('/upload', authenticate, (req, res) => {
   res.sendFile(path.join(__dirname, 'upload.html'));
 });
 
 // Handle file upload
-app.post('/upload', async (req, res) => {
+app.post('/upload', authenticate, async (req, res) => {
   // Check if a file was uploaded
   if (!req.files || !req.files.file) {
     return res.status(400).send('No file was uploaded.');
@@ -151,23 +171,10 @@ app.post('/upload', async (req, res) => {
           }).catch((error) => {
             console.error('Error occurred while deleting the file:', error);
           });
-        }, 15 * 60 * 1000);
+        }, 5 * 60 * 1000);
 
         // Auto delete the file after download
-        const downloadLinkElement = document.querySelector('a');
-        downloadLinkElement.addEventListener('click', () => {
-          fetch('/delete', {
-            method: 'POST',
-            body: JSON.stringify({ filePath }),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }).then(() => {
-            console.log('File deleted successfully');
-          }).catch((error) => {
-            console.error('Error occurred while deleting the file:', error);
-          });
-        });
+        
       </script>
     `);
   });
@@ -187,7 +194,7 @@ app.get('/download/:fileName', (req, res) => {
     }
 
     // Delete the file after download
-    deleteFile(filePath);
+    
   });
 });
 
