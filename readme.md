@@ -4,10 +4,12 @@ This is a simple file sharing system built using Node.js and Express. It allows 
 
 ## Disclaimer
 
-**IMPORTANT:** This file sharing system does not provide encryption for the uploaded files. It is meant for simple file sharing purposes and should not be used for sensitive or confidential data. The files uploaded to the system are stored on the server in their original format without encryption. Therefore, it is recommended to exercise caution when uploading and sharing files containing sensitive information.
+**IMPORTANT:** Although an encryption system has been added to this file sharing system, it is important to note that it may still have vulnerabilities and potential issues. Therefore, it is crucial to exercise caution when using this system and avoid uploading or sharing sensitive or confidential data. The files uploaded to the server are stored with encryption but things may break. Please be aware that the security and reliability of the system cannot be guaranteed, and you should use it at your own risk.
+
 
 ## Features
 
+- end-to-end encryption: a encryption system that provides more security.
 - User authentication: Users can log in with their credentials to access the file sharing system.
 - File upload: Users can select and upload files from their devices.
 - File download: Uploaded files can be downloaded using unique download links.

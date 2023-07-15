@@ -9,18 +9,19 @@ const config = require('./config.json');
 const db = require('quick.db');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const crypto = require('crypto');
 
 const app = express();
 
 app.use(session({
-  secret: config.secret_key,
+  secret: config.secret,
   resave: false,
   saveUninitialized: true
 }));
 
 app.use(bodyParser.urlencoded({ extended: false }));
-// Set the upload limit (default: 200MB)
-const uploadLimit = 200 * 1024 * 1024;
+// Set the upload limit (default: 500MB)
+const uploadLimit = 500 * 1024 * 1024;
 app.use(fileUpload({
   limits: { fileSize: uploadLimit }
 }));
@@ -112,8 +113,7 @@ function authenticate(req, res, next) {
     // User is not logged in, redirect to the login page
     res.redirect('/');
   }
-    }
-
+}
 
 // Serve the upload form page
 app.get('/upload', authenticate, (req, res) => {
@@ -140,61 +140,54 @@ app.post('/upload', authenticate, async (req, res) => {
   const filePath = path.join(__dirname, 'uploads', fileName);
   const downloadLink = `${config.domain}/download/${fileName}`;
 
-  // Move the uploaded file to the server
-  file.mv(filePath, async (err) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send('Error occurred while uploading the file.');
-    }
+  // Encrypt the file
+  const encryptedFilePath = encryptFile(file.data, filePath);
 
-    // Generate the QR code image
-    const qrCodeImage = await qrCode.toDataURL(downloadLink);
+  // Generate the QR code image
+  const qrCodeImage = await qrCode.toDataURL(downloadLink);
 
-    // Display the file name, download link, and QR code on the upload success page
-    res.send(`
-      <h2>File uploaded successfully!</h2>
-      <p>File name: ${file.name}</p>
-      <p>Download link: <a href="${downloadLink}">${downloadLink}</a></p>
-      <img src="${qrCodeImage}" alt="QR Code">
+  // Display the file name, download link, and QR code on the upload success page
+  res.send(`
+    <h2>File uploaded successfully!</h2>
+    <p>File name: ${file.name}</p>
+    <p>Download link: <a href="${downloadLink}">${downloadLink}</a></p>
+    <img src="${qrCodeImage}" alt="QR Code">
 
-      <script>
-        // Auto delete the file after 15 minutes
-        setTimeout(() => {
-          fetch('/delete', {
-            method: 'POST',
-            body: JSON.stringify({ filePath }),
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }).then(() => {
-            console.log('File deleted successfully');
-          }).catch((error) => {
-            console.error('Error occurred while deleting the file:', error);
-          });
-        }, 5 * 60 * 1000);
-
-        // Auto delete the file after download
-        
-      </script>
-    `);
-  });
-  
+    <script>
+      // Auto delete the file after 15 minutes
+      setTimeout(() => {
+        fetch('/delete', {
+          method: 'POST',
+          body: JSON.stringify({ filePath: encryptedFilePath }),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }).then(() => {
+          console.log('File deleted successfully');
+        }).catch((error) => {
+          console.error('Error occurred while deleting the file:', error);
+        });
+      }, 15 * 60 * 1000);
+    </script>
+  `);
 });
-
 
 // Handle file download
 app.get('/download/:fileName', (req, res) => {
   const { fileName } = req.params;
   const filePath = path.join(__dirname, 'uploads', fileName);
 
-  res.download(filePath, (err) => {
+  // Decrypt the file
+  const decryptedFilePath = decryptFile(filePath);
+
+  res.download(decryptedFilePath, (err) => {
     if (err) {
       console.error(err);
       return res.status(500).send('Error occurred while downloading the file.');
     }
 
-    // Delete the file after download
-    
+    // Delete the decrypted file after download
+    deleteFile(decryptedFilePath);
   });
 });
 
@@ -217,8 +210,45 @@ function deleteFile(filePath) {
   });
 }
 
+// Encrypt file
+function encryptFile(fileData, filePath) {
+  const key = crypto.createHash('sha256').update(path.basename(filePath)).digest('hex').slice(0, 32);
+  const iv = crypto.createHash('sha256').update(path.basename(filePath)).digest('hex').slice(0, 16);
+
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+
+  const encryptedData = Buffer.concat([
+    cipher.update(fileData),
+    cipher.final()
+  ]);
+
+  fs.writeFileSync(filePath, encryptedData);
+
+  return filePath;
+}
+
+// Decrypt file
+function decryptFile(filePath) {
+  const encryptedData = fs.readFileSync(filePath);
+
+  const key = crypto.createHash('sha256').update(path.basename(filePath)).digest('hex').slice(0, 32);
+  const iv = crypto.createHash('sha256').update(path.basename(filePath)).digest('hex').slice(0, 16);
+
+  const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+
+  const decryptedData = Buffer.concat([
+    decipher.update(encryptedData),
+    decipher.final()
+  ]);
+
+  const decryptedFilePath = filePath.replace('/uploads/', '/decrypted/');
+  fs.writeFileSync(decryptedFilePath, decryptedData);
+
+  return decryptedFilePath;
+        }
+
 // Start the server
 app.listen(config.port, () => {
   console.log(`Server started on port ${config.port}`);
 });
-  //end
+  

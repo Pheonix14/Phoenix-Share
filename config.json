@@ -1,5 +1,5 @@
 {
   "domain": "localhost:3000",
   "port": 3000,
-  "secret_key": "your-secret_key"
+  "secret": "your-secret_key"
 }
