@@ -10,8 +10,12 @@ const db = require('quick.db');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const crypto = require('crypto');
+const ejs = require('ejs');
 
 const app = express();
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 app.use(session({
   secret: config.secret,
@@ -28,7 +32,7 @@ app.use(fileUpload({
 
 // Serve the login page
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
+  res.render('login');
 });
 
 // Handle login form submission
@@ -53,6 +57,8 @@ app.post('/login', (req, res) => {
     if (result) {
       // Passwords match, user is authenticated
       req.session.loggedIn = true; // Save authentication state to session
+req.session.username = username; // Assuming you have 'username' as the variable storing the logged-in user's username.     
+      
       return res.redirect('/upload');
     } else {
       // Passwords do not match
@@ -63,7 +69,7 @@ app.post('/login', (req, res) => {
 
 // Serve the account creation page
 app.get('/create-account', (req, res) => {
-  res.sendFile(path.join(__dirname, 'create-account.html'));
+  res.render('create-account');
 });
 
 // Handle account creation form submission
@@ -117,8 +123,10 @@ function authenticate(req, res, next) {
 
 // Serve the upload form page
 app.get('/upload', authenticate, (req, res) => {
-  res.sendFile(path.join(__dirname, 'upload.html'));
+  const { username } = req.session;
+  res.render('upload', { username });
 });
+
 
 // Handle file upload
 app.post('/upload', authenticate, async (req, res) => {
