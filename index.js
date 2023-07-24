@@ -11,16 +11,19 @@ const session = require('express-session');
 const crypto = require('crypto');
 const ejs = require('ejs');
 const logger = require('./logger.js');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+app.use(cookieParser()); // Use cookie-parser middleware
 app.use(session({
   secret: config.secret,
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: { maxAge: 259200000 } // Set cookie expiration time in milliseconds (e.g., 1 day)
 }));
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -31,7 +34,7 @@ app.use(fileUpload({
 }));
 
 // Serve the login page
-app.get('/', (req, res) => {
+app.get('/', checkLoggedIn, (req, res) => {
   res.render('login');
 });
 
@@ -50,20 +53,19 @@ app.post('/login', (req, res) => {
   // Compare the provided password with the stored hashed password
   bcrypt.compare(password, user.password, (err, result) => {
     if (err) {
-      logger.error(err);
+      console.error(err);
       return res.status(500).send('Internal Server Error');
     }
 
     if (result) {
-      // Passwords match, user is authenticated
-      req.session.loggedIn = true; // Save authentication state to session
-req.session.username = username; // Assuming you have 'username' as the variable storing the logged-in user's username.     
-      
-      return res.redirect('/upload');
-    } else {
-      // Passwords do not match
-      return res.status(400).send('Invalid username or password');
-    }
+    // Passwords match, user is authenticated
+    req.session.loggedIn = true; // Save authentication state to session
+    res.cookie('loggedInUser', username); // Set loggedInUser cookie
+    return res.redirect('/upload');
+  } else {
+    // Passwords do not match
+    return res.status(400).send('Invalid username or password');
+   }
   });
 });
 
@@ -112,18 +114,32 @@ app.post('/create-account', (req, res) => {
 // Authentication middleware
 function authenticate(req, res, next) {
   // Check if the user is logged in
-  if (req.session && req.session.loggedIn) {
+  if (req.session.loggedIn) {
     // User is authenticated, allow access to the next middleware or route
     next();
   } else {
+    // Check if there is a loggedInUser cookie and restore the session
+    if (req.cookies.loggedInUser) {
+      req.session.loggedIn = true;
+      req.session.user = req.cookies.loggedInUser;
+      return next();
+    }
     // User is not logged in, redirect to the login page
     res.redirect('/');
   }
 }
 
+function checkLoggedIn(req, res, next) {
+  if (req.session.loggedIn) {
+    return res.redirect('/upload');
+  }
+  next();
+}
+
+
 // Serve the upload form page
 app.get('/upload', authenticate, (req, res) => {
-  const { username } = req.session;
+    const username = req.cookies.loggedInUser; // Get the loggedInUser cookie value
   res.render('upload', { username });
 });
 
