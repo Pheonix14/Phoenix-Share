@@ -3,7 +3,6 @@ const bodyParser = require('body-parser');
 const fileUpload = require('express-fileupload');
 const fs = require('fs');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
 const qrCode = require('qrcode');
 const config = require('./config.json');
 const db = require('quick.db');
@@ -11,6 +10,7 @@ const bcrypt = require('bcrypt');
 const session = require('express-session');
 const crypto = require('crypto');
 const ejs = require('ejs');
+const logger = require('./logger.js');
 
 const app = express();
 
@@ -50,7 +50,7 @@ app.post('/login', (req, res) => {
   // Compare the provided password with the stored hashed password
   bcrypt.compare(password, user.password, (err, result) => {
     if (err) {
-      console.error(err);
+      logger.error(err);
       return res.status(500).send('Internal Server Error');
     }
 
@@ -84,13 +84,13 @@ app.post('/create-account', (req, res) => {
   // Generate a salt and hash the password
   bcrypt.genSalt(10, (err, salt) => {
     if (err) {
-      console.error(err);
+      logger.error(err);
       return res.status(500).send('Internal Server Error');
     }
 
     bcrypt.hash(password, salt, (err, hash) => {
       if (err) {
-        console.error(err);
+        logger.error(err);
         return res.status(500).send('Internal Server Error');
       }
 
@@ -130,6 +130,7 @@ app.get('/upload', authenticate, (req, res) => {
 
 // Handle file upload
 app.post('/upload', authenticate, async (req, res) => {
+  const { username } = req.session;
   // Check if a file was uploaded
   if (!req.files || !req.files.file) {
     return res.status(400).send('No file was uploaded.');
@@ -144,9 +145,9 @@ app.post('/upload', authenticate, async (req, res) => {
     return res.status(400).send('Invalid file type. Only PDF, images, videos, Microsoft Office files, and ZIP files are allowed.');
   }
 
-  const fileName = `${uuidv4()}${fileExtension}`;
+  const fileName = file.name;
   const filePath = path.join(__dirname, 'uploads', fileName);
-  const downloadLink = `${config.domain}/download/${fileName}`;
+  const downloadLink = `${config.domain}/download/${file.name}`;
 
   // Encrypt the file
   const encryptedFilePath = encryptFile(file.data, filePath);
@@ -161,23 +162,13 @@ app.post('/upload', authenticate, async (req, res) => {
     <p>Download link: <a href="${downloadLink}">${downloadLink}</a></p>
     <img src="${qrCodeImage}" alt="QR Code">
 
-    <script>
-      // Auto delete the file after 15 minutes
-      setTimeout(() => {
-        fetch('/delete', {
-          method: 'POST',
-          body: JSON.stringify({ filePath: encryptedFilePath }),
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }).then(() => {
-          console.log('File deleted successfully');
-        }).catch((error) => {
-          console.error('Error occurred while deleting the file:', error);
-        });
-      }, 15 * 60 * 1000);
-    </script>
-  `);
+    <script></script>
+`);
+  logger.info(`${fileName} Is Just Uploaded By ${username}. And It's Have 30min To Get Downloaded`)
+  setTimeout(() => {
+    logger.info(`${fileName} Is Now Deleting After 30mins Of Upload`);
+    deleteFile(filePath);
+}, 30 * 60 * 1000);
 });
 
 // Handle file download
@@ -195,28 +186,22 @@ app.get('/download/:fileName', (req, res) => {
     }
 
     // Delete the decrypted file after download
+    logger.info(`Decrypted ${fileName} Is Now Deleting Because It's Downloaded`);
     deleteFile(decryptedFilePath);
   });
 });
 
-// Handle file deletion
-app.post('/delete', (req, res) => {
-  const { filePath } = req.body;
-
-  deleteFile(filePath);
-  res.status(200).send('File deleted successfully.');
-});
-
-// Delete file
+// file delete handler
 function deleteFile(filePath) {
   fs.unlink(filePath, (err) => {
     if (err) {
-      console.error(err);
+      logger.error(err);
     } else {
-      console.log('File deleted successfully');
+      logger.info('File Deleted Successfully');
     }
   });
 }
+
 
 // Encrypt file
 function encryptFile(fileData, filePath) {
@@ -257,6 +242,6 @@ function decryptFile(filePath) {
 
 // Start the server
 app.listen(config.port, () => {
-  console.log(`Server started on port ${config.port}`);
+  logger.info(`Server Started On Port ${config.port}`);
 });
   
