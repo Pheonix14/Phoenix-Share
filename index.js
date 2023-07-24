@@ -58,14 +58,14 @@ app.post('/login', (req, res) => {
     }
 
     if (result) {
-    // Passwords match, user is authenticated
-    req.session.loggedIn = true; // Save authentication state to session
-    res.cookie('loggedInUser', username); // Set loggedInUser cookie
-    return res.redirect('/upload');
-  } else {
-    // Passwords do not match
-    return res.status(400).send('Invalid username or password');
-   }
+      // Passwords match, user is authenticated
+      req.session.loggedIn = true; // Save authentication state to session
+      res.cookie('loggedInUser', username); // Set loggedInUser cookie
+      return res.redirect('/upload');
+    } else {
+      // Passwords do not match
+      return res.status(400).send('Invalid username or password');
+    }
   });
 });
 
@@ -139,7 +139,7 @@ function checkLoggedIn(req, res, next) {
 
 // Serve the upload form page
 app.get('/upload', authenticate, (req, res) => {
-    const username = req.cookies.loggedInUser; // Get the loggedInUser cookie value
+  const username = req.cookies.loggedInUser; // Get the loggedInUser cookie value
   res.render('upload', { username });
 });
 
@@ -154,12 +154,6 @@ app.post('/upload', authenticate, async (req, res) => {
 
   const file = req.files.file;
   const fileExtension = path.extname(file.name);
-  const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png', '.gif', '.mp4', '.mov', '.doc', '.docx', '.ppt', '.pptx', '.xls', '.xlsx', '.zip'];
-
-  // Check if the file extension is valid
-  if (!validExtensions.includes(fileExtension)) {
-    return res.status(400).send('Invalid file type. Only PDF, images, videos, Microsoft Office files, and ZIP files are allowed.');
-  }
 
   const fileName = file.name;
   const filePath = path.join(__dirname, 'uploads', fileName);
@@ -184,7 +178,7 @@ app.post('/upload', authenticate, async (req, res) => {
   setTimeout(() => {
     logger.info(`${fileName} Is Now Deleting After 30mins Of Upload`);
     deleteFile(filePath);
-}, 30 * 60 * 1000);
+  }, 30 * 60 * 1000);
 });
 
 // Handle file download
@@ -254,10 +248,9 @@ function decryptFile(filePath) {
   fs.writeFileSync(decryptedFilePath, decryptedData);
 
   return decryptedFilePath;
-        }
+}
 
 // Start the server
 app.listen(config.port, () => {
   logger.info(`Server Started On Port ${config.port}`);
 });
-  

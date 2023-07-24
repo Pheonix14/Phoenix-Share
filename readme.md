@@ -1,12 +1,15 @@
+![Logo](https://media.discordapp.net/attachments/1118813311308419162/1133109564158525552/20230725_002143_0000-removebg-preview.png)
+
+
 # Phoenix Share
 
-This is a simple file sharing system built using Node.js and Express. It allows users to securely upload and share files with others. Please note that this system does not include encryption for the uploaded files.
+This is a simple file sharing system built using Node.js and Express. It allows users to securely upload and share files with others.
+
+[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
 ## Disclaimer
 
-**IMPORTANT:** Although an encryption system has been added to this file sharing system, it is important to note that it may still have vulnerabilities and potential issues. Therefore, it is crucial to exercise caution when using this system and avoid uploading or sharing sensitive or confidential data. The files uploaded to the server are stored with encryption but things may break. Please be aware that the security and reliability of the system cannot be guaranteed, and you should use it at your own risk.
-
-
+**IMPORTANT:** Although an encryption system has been added to this file sharing system, it is important to note that it may still have vulnerabilities and potential issues. Therefore, it is crucial to exercise caution when using this system and avoid uploading or sharing sensitive or confidential data. The files uploaded to the server are stored with encryption but things may break anytime. Please be aware that the security and reliability of the system cannot be guaranteed, and you should use it at your own risk.
 ## Features
 
 - end-to-end encryption: a encryption system that provides more security.
@@ -16,19 +19,48 @@ This is a simple file sharing system built using Node.js and Express. It allows 
 - QR code generation: Quick sharing and scanning of files through QR codes.
 - File deletion: Automatically deletes files from the server after a set period of time or when downloaded.
 
+
 ## Prerequisites
 
 Before running the system, ensure that you have the following installed:
 
-- Node.js
+- Node.js (lts Version)
 - npm (Node Package Manager)
+## Run Locally
 
-## Installation
+Clone the project:
 
-1. Clone this repository to your local machine.
-2. Navigate to the project directory using the command line.
-3. Run `npm install` to install the required dependencies.
-4. Fill every details in `config.json`
+```bash
+  git clone https://github.com/Pheonix14/Phoenix-Share.git
+```
+
+Go to the project directory:
+
+```bash
+  cd Phoenix-Share
+```
+
+Config:
+
+ Fill the file called `config.json` with required details.
+
+Install dependencies:
+
+```bash
+  npm install
+```
+
+Start the server:
+
+```bash
+  node index.js
+```
+or
+```bash
+  npm run start
+```
+
+
 ## Usage
 
 1. Run `node index.js` or `npm start` to start the server.
@@ -39,11 +71,19 @@ Before running the system, ensure that you have the following installed:
 6. Share the download link or QR code with others to allow them to download the file.
 7. The file will be automatically deleted from the server after a set period of time.
 
+
 ## Customization
 
 - You can customize the upload limit by modifying the `uploadLimit` variable.
+- You can customize auto deletion time by modifying the `setTimeout` variable.
 - To change the server port, update the port number in `config.json` file.
-- 
+- To change the domain, update the domain url in `config.json`.
+- To change the cookie secret, update the secret key in `config.json`. 
+## Support
+
+For support, [Join discord server](https://discord.gg/DSdjz5Cgwb)
+
+
 ## License
 
 [MIT License](LICENSE)

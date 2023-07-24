@@ -6,6 +6,7 @@
   <meta name="keywords" content="HTML, CSS, JavaScript">
   <meta name="author" content="Pheonix">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="https://media.discordapp.net/attachments/1118813311308419162/1133000448815681536/OIP__2_-removebg-preview.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <title>Phoenix Share</title>
   <style>
@@ -18,7 +19,7 @@
       font-family: Arial, sans-serif;
       background-color: #f2f2f2;
     }
-    
+
     .header {
       display: flex;
       justify-content: space-between;
@@ -26,12 +27,13 @@
       padding: 10px;
       background-color: #f2f2f2;
     }
+
     .username {
-  position: absolute;
-  top: 10px;
-  right: 20px;
-  font-weight: bold;
-  color: #333;
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-weight: bold;
+      color: #333;
     }
 
     h1 {
@@ -99,21 +101,58 @@
       font-size: 14px;
       color: #333;
     }
+    #Encryption {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #128C7E;
+    }
+
+    .logo-container {
+      width: 200px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .logo {
+      max-width: 100%;
+      height: auto;
+    }
   </style>
 </head>
 <body>
   <div class="username">Welcome, <%= username %></div>
+  <div class="logo-container">
+    <img class="logo" src="https://media.discordapp.net/attachments/1118813311308419162/1133000448815681536/OIP__2_-removebg-preview.png" alt="Logo">
+  </div>
   <h1>Phoenix Share</h1>
   <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
     <input type="file" name="file" id="fileInput">
-    <label for="fileInput" class="upload-button">Choose File</label>
+    <label for="fileInput" class="upload-button">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-plus-fill" viewBox="0 0 16 16">
+  <path d="M9.293 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.707A1 1 0 0 0 13.707 4L10 .293A1 1 0 0 0 9.293 0zM9.5 3.5v-2l3 3h-2a1 1 0 0 1-1-1zM8.5 7v1.5H10a.5.5 0 0 1 0 1H8.5V11a.5.5 0 0 1-1 0V9.5H6a.5.5 0 0 1 0-1h1.5V7a.5.5 0 0 1 1 0z"/>
+  </svg>
+  Choose File
+</label>
     <div id="dragDropArea">Drag and Drop Files Here</div>
-    <button type="submit" class="upload-button">Upload</button>
+    <button type="submit" class="upload-button">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-arrow-up-fill" viewBox="0 0 16 16">
+  <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2zm2.354 5.146a.5.5 0 0 1-.708.708L8.5 6.707V10.5a.5.5 0 0 1-1 0V6.707L6.354 7.854a.5.5 0 1 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2z"/>
+  </svg>
+Upload
+</button>
+    <h2 id="Encryption">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-lock-fill" viewBox="0 0 16 16">
+  <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
+  </svg>
+Secured With End To End Encryption
+</h2>
   </form>
   <h2 id="downloadLink">Uploaded file will be displayed here.</h2>
 
   <script>
-    const form = document.getElementById('uploadForm');
+const form = document.getElementById('uploadForm');
     const fileInput = document.getElementById('fileInput');
     const downloadLink = document.getElementById('downloadLink');
     const dragDropArea = document.getElementById('dragDropArea');
