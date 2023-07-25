@@ -146,7 +146,7 @@ app.get('/upload', authenticate, (req, res) => {
 
 // Handle file upload
 app.post('/upload', authenticate, async (req, res) => {
-  const { username } = req.session;
+  const { username } = req.cookies.loggedInUser;
   // Check if a file was uploaded
   if (!req.files || !req.files.file) {
     return res.status(400).send('No file was uploaded.');
