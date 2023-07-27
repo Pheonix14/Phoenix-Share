@@ -23,7 +23,7 @@ app.use(session({
   secret: config.secret,
   resave: false,
   saveUninitialized: true,
-  cookie: { maxAge: 259200000 } // Set cookie expiration time in milliseconds (e.g., 1 day)
+  cookie: { maxAge: 7200000 } // Set cookie expiration time in milliseconds (e.g., 1 day)
 }));
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -146,15 +146,13 @@ app.get('/upload', authenticate, (req, res) => {
 
 // Handle file upload
 app.post('/upload', authenticate, async (req, res) => {
-  const { username } = req.cookies.loggedInUser;
+  const username = req.cookies.loggedInUser;
   // Check if a file was uploaded
   if (!req.files || !req.files.file) {
     return res.status(400).send('No file was uploaded.');
   }
 
   const file = req.files.file;
-  const fileExtension = path.extname(file.name);
-
   const fileName = file.name;
   const filePath = path.join(__dirname, 'uploads', fileName);
   const downloadLink = `${config.domain}/download/${file.name}`;
@@ -169,16 +167,18 @@ app.post('/upload', authenticate, async (req, res) => {
   res.send(`
     <h2>File uploaded successfully!</h2>
     <p>File name: ${file.name}</p>
+    <p>Uploaded By: ${username}</p>
     <p>Download link: <a href="${downloadLink}">${downloadLink}</a></p>
     <img src="${qrCodeImage}" alt="QR Code">
-
+<p>Download the file before it gets deleted. It will be deleted in 60 minutes.</p>
     <script></script>
 `);
-  logger.info(`${fileName} Is Just Uploaded By ${username}. And It's Have 30min To Get Downloaded`)
+  logger.info(`${fileName} Is Just Uploaded By ${username}. And It's Have 60min To Get Downloaded.`)
   setTimeout(() => {
-    logger.info(`${fileName} Is Now Deleting After 30mins Of Upload`);
+    logger.info(`${fileName} Is Now Deleting After 30mins Of Upload....`);
     deleteFile(filePath);
-  }, 30 * 60 * 1000);
+    // set file delete time
+  }, 60 * 60 * 1000);
 });
 
 // Handle file download
@@ -196,7 +196,7 @@ app.get('/download/:fileName', (req, res) => {
     }
 
     // Delete the decrypted file after download
-    logger.info(`Decrypted ${fileName} Is Now Deleting Because It's Downloaded`);
+    logger.info(`Decrypted ${fileName} Is Now Deleting Because It's Downloaded.....`);
     deleteFile(decryptedFilePath);
   });
 });
@@ -207,7 +207,7 @@ function deleteFile(filePath) {
     if (err) {
       logger.error(err);
     } else {
-      logger.info('File Deleted Successfully');
+      logger.info('File Deleted Successfully.');
     }
   });
 }
