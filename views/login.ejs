@@ -1,98 +1,115 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="description" content="Login page for Phoenix Share">
-  <meta name="keywords" content="HTML, CSS, JavaScript">
-  <meta name="author" content="Phoenix">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="mobile-web-app-capable" content="yes">
-  <link rel="icon" href="https://media.discordapp.net/attachments/1118813311308419162/1133000448815681536/OIP__2_-removebg-preview.png">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-  <title>Phoenix Share</title>
+  <title>Login Page</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/css/bootstrap.min.css">
+  
+  <!-- MDBootstrap CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdbootstrap@5.2.3/css/mdb.min.css">
+  
+  <!-- Custom CSS -->
   <style>
     body {
-      background-color: #f2f2f2;
-      font-family: Arial, sans-serif;
+      background-color: #fff4e6;
     }
 
-    .login-container {
-      margin: 0 auto;
-      max-width: 400px;
-      padding: 20px;
-      box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
+    .container {
+      height: 100vh;
     }
 
-    h2 {
-      margin-top: 0;
+    .form-control:focus {
+      box-shadow: none;
     }
 
-    label {
-      font-weight: bold;
+    .btn-primary {
+      background-color: #ff5722;
+      border-color: #ff5722;
+      transition: background-color 0.3s;
     }
 
-    input[type="text"],
-    input[type="password"] {
-      width: 100%;
-      padding: 8px;
-      border-radius: 4px;
-      margin-bottom: 20px;
+    .btn-primary:hover {
+      background-color: #ff7043;
+      border-color: #ff7043;
     }
 
-    button {
-      background-color: #4CAF50;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
+    .btn-primary:active {
+      background-color: #ff8a65;
+      border-color: #ff8a65;
     }
 
-    button:hover {
-      background-color: #45a049;
+    .btn-primary:focus {
+      background-color: #ff7043 !important;
+      border-color: #ff7043 !important;
+      box-shadow: none !important;
     }
 
-    .error-message {
-      color: red;
-      margin-bottom: 20px;
-        }
+    .btn-primary.disabled, .btn-primary:disabled {
+      background-color: #ff5722 !important;
+      border-color: #ff5722 !important;
+    }
+
+    .btn-link {
+      color: #ff5722;
+    }
+
+    .btn-link:hover {
+      color: #ff7043;
+    }
+
+    .btn-link:focus {
+      color: #ff7043 !important;
+      text-decoration: underline !important;
+      box-shadow: none !important;
+    }
+
+      @media (max-width: 576px) {
+    body {
+      background-color: #fff; /* Adjust background color for small screens */
+    }
+
+    .container {
+      padding: 20px; /* Add padding to the container for small screens */
+    }
+
+    .col-md-6 {
+      max-width: 100%; /* Ensure full width for small screens */
+    }
+
+    .btn-primary {
+      width: 100%; /* Make the button full width on small screens */
+    }
+      }
+    
   </style>
 </head>
 <body>
-  <div class="container mt-5">
-    <div class="login-container p-4 bg-white rounded">
-      <h2 class="mb-4">Login</h2>
-      <form action="/login" method="post">
-        <div class="form-group">
-          <label for="username">Username:</label>
-          <input type="text" class="form-control" id="username" name="username" required>
-        </div>
+  <div class="container">
+    <div class="row justify-content-center align-items-center vh-100">
+      <div class="col-md-6">
+        <form class="text-center p-5" action="/login" method="post">
+          <h1 class="mb-4" style="color: #ff5722;">Phoenix Share</h1>
 
-        <div class="form-group">
-          <label for="password">Password:</label>
-          <input type="password" class="form-control" id="password" name="password" required>
-        </div>
-        <button type="submit" class="btn btn-primary">
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-lock" viewBox="0 0 16 16">
-  <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 5.996V14H3s-1 0-1-1 1-4 6-4c.564 0 1.077.038 1.544.107a4.524 4.524 0 0 0-.803.918A10.46 10.46 0 0 0 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h5ZM9 13a1 1 0 0 1 1-1v-1a2 2 0 1 1 4 0v1a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-2Zm3-3a1 1 0 0 0-1 1v1h2v-1a1 1 0 0 0-1-1Z"/>
-</svg>
-          Login
-        </button>
-<br>
-<br>
-        <p class="error-message">{{ errorMessage }}</p>
-      </form>
-      <button class="btn btn-secondary" onclick="window.location.href='/create-account'">
- <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-plus" viewBox="0 0 16 16">
-  <path d="M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H1s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C9.516 10.68 8.289 10 6 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
-  <path fill-rule="evenodd" d="M13.5 5a.5.5 0 0 1 .5.5V7h1.5a.5.5 0 0 1 0 1H14v1.5a.5.5 0 0 1-1 0V8h-1.5a.5.5 0 0 1 0-1H13V5.5a.5.5 0 0 1 .5-.5z"/>
- </svg>       
-Create Account
-</button>
+          <input type="text" id="username" class="form-control mb-4" name="username" placeholder="Username" required>
+
+          <input type="password" id="password" class="form-control mb-4" name="password" placeholder="Password" required>
+
+          <button class="btn btn-primary btn-block my-4" type="submit">
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill-lock" viewBox="0 0 16 16">
+  <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm-9 8c0 1 1 1 1 1h5v-1a1.9 1.9 0 0 1 .01-.2 4.49 4.49 0 0 1 1.534-3.693C9.077 9.038 8.564 9 8 9c-5 0-6 3-6 4Zm7 0a1 1 0 0 1 1-1v-1a2 2 0 1 1 4 0v1a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-2Zm3-3a1 1 0 0 0-1 1v1h2v-1a1 1 0 0 0-1-1Z"/>
+            </svg> Login</button>
+
+          <p class="mb-4">Don't have an account? <a class="btn-link" href="/create-account">Create one</a></p>
+        </form>
+      </div>
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
-  <script src="https://unpkg.com/@popperjs/core@2/dist/umd/popper.js"></script>
+
+  <!-- Bootstrap 5 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
+            </html>
+      
