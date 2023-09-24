@@ -2,3 +2,4 @@ node_modules
 json.sqlite
 .replit
 replit.nix
+logs.log

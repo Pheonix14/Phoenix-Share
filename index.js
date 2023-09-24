@@ -1,21 +1,24 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const fileUpload = require('express-fileupload');
-const fs = require('fs');
-const path = require('path');
-const qrCode = require('qrcode');
-const config = require('./config.json');
-const db = require('quick.db');
-const bcrypt = require('bcrypt');
-const session = require('express-session');
-const crypto = require('crypto');
-const ejs = require('ejs');
-const logger = require('./logger.js');
-const cookieParser = require('cookie-parser');
+import express from 'express';
+import bodyParser from 'body-parser';
+import fileUpload from 'express-fileupload';
+import fs from 'fs';
+import path from 'path';
+import qrCode from 'qrcode';
+import config from './config.json' assert { type: "json" };
+import db from 'quick.db';
+import bcrypt from 'bcrypt';
+import session from 'express-session';
+import crypto from 'crypto';
+import ejs from 'ejs';
+import logger from './logger.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
 
 app.set('view engine', 'ejs');
+
+const __dirname = path.dirname(new URL(import.meta.url).pathname);
+
 app.set('views', path.join(__dirname, 'views'));
 
 app.use(cookieParser()); // Use cookie-parser middleware
@@ -35,6 +38,9 @@ app.use(fileUpload({
 
 // Serve the login page
 app.get('/', checkLoggedIn, (req, res) => {
+  res.render('login');
+});
+app.get('/login', checkLoggedIn, (req, res) => {
   res.render('login');
 });
 
@@ -165,34 +171,41 @@ app.post('/upload', authenticate, async (req, res) => {
 
   // Display the file name, download link, and QR code on the upload success page
   res.send(`
-  <div class="Download">
-    <h2> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cloud-check-fill" viewBox="0 0 16 16">
-  <path d="M8 2a5.53 5.53 0 0 0-3.594 1.342c-.766.66-1.321 1.52-1.464 2.383C1.266 6.095 0 7.555 0 9.318 0 11.366 1.708 13 3.781 13h8.906C14.502 13 16 11.57 16 9.773c0-1.636-1.242-2.969-2.834-3.194C12.923 3.999 10.69 2 8 2zm2.354 4.854-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7 8.793l2.646-2.647a.5.5 0 0 1 .708.708z"/>
-</svg> File uploaded successfully!</h2>
+<div class="Download">
+    <h2>File uploaded successfully!</h2>
     <p>File name: ${file.name}</p>
     <p>Uploaded By: ${username}</p>
     <p>Download link: <a href="${downloadLink}">${downloadLink}</a></p>
     <img src="${qrCodeImage}" alt="QR Code">
-<p>Download the file before it gets deleted. It will be deleted in 60 minutes.</p>
+    <p>Download the file before it gets deleted. It will be deleted in 60 minutes.</p>
 </div>
-    <style>
-h2 {
-      font-size: 20px;
-      text-align: center;
-      margin-bottom: 20px;
-      color: #333;
+
+<style>
+    .Download {
+        text-align: center;
+        padding: 20px;
+        background-color: #1e1e1e;
+        border-radius: 10px;
+        box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.1);
+        color: #fff;
     }
-p {
-  font-size: 10px;
-      margin-bottom: 10px;
-      text-align: center;
-      color: #333;
-}
-img {
-  padding: 5px;
-  width: 120px;
-}
-    </style>
+
+    h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+    }
+
+    p {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    img {
+        padding: 5px;
+        width: 120px;
+    }
+</style>
+
 `);
   logger.info(`${fileName} Is Just Uploaded By ${username}. And It's Have 60min To Get Downloaded.`)
   setTimeout(() => {

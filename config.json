@@ -1,5 +1,5 @@
 {
-  "domain": "https://phoenix-share-test-build.soumyajitdas7.repl.co",
+  "domain": "your-domain",
   "port": 3000,
   "secret": "your-secret_key"
 }
