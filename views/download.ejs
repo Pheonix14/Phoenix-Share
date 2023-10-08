@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Phoenix Share">
-    <meta name="author" content="Pheonix">
-    <link rel="icon" href="https://media.discordapp.net/attachments/1118813310041739314/1159086282882953296/OIG.jpg?ex=651e9ab8&is=651d4938&hm=0faa48f79134b49fa889ff43c332d0759968f3cc76c9e55233b9c2490e892833&">
+    <meta name="author" content="Phoenix">
+    <link rel="icon" href="https://media.discordapp.net/attachments/1118813310041739314/1159086282312531999/98000387-53a3-418e-910d-68924d7b1eee-removebg-preview.png?ex=651e9ab8&is=651d4938&hm=52ed2e2882976572c32822a9b60e8d01d576d3bdc56f476b08f7160308cae96c&">
     <link href="
 https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
 " rel="stylesheet">
-    <title>Phoenix Share - Register</title>
+    <title>Phoenix Share - Download</title>
     <style>
         body {
             background-color: #121212;
@@ -36,7 +36,7 @@ https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
             color: #fff;
         }
 
-        .form-container {
+        .download-container {
             width: 90%;
             max-width: 320px;
             padding: 30px;
@@ -46,77 +46,76 @@ https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
             text-align: center;
         }
 
-        .input-field {
-            width: 100%;
-            padding: 10px;
-            margin-top: 15px;
-            border: 2px solid #4a90e2;
-            border-radius: 8px;
-            background-color: #1e1e1e;
-            color: #fff;
-        }
-
-        .login-button {
+        .download-button {
             background-color: #4a90e2;
             color: #fff;
             border: none;
             border-radius: 8px;
             padding: 15px 30px;
             font-size: 16px;
+            text-decoration: none;
             cursor: pointer;
             transition: background-color 0.3s;
             margin-top: 20px;
+            display: block;
+            width: 75%; /* Make the button full width */
         }
 
-        .login-button:hover {
+        .download-button:hover {
             background-color: #357abd;
         }
 
         .footer {
             margin-top: 20px;
             font-size: 14px;
-            color: #ccc;
-        }
+            color: #fff;
+       } 
+      p {
+        color: #fff;
+      }
+      h2 {
+        font-size: 20px;
+        color: #3366CC
+      }
+      
     </style>
 </head>
 <body>
 <div class="container">
     <img class="logo" src="https://media.discordapp.net/attachments/1118813310041739314/1159086282312531999/98000387-53a3-418e-910d-68924d7b1eee-removebg-preview.png?ex=651e9ab8&is=651d4938&hm=52ed2e2882976572c32822a9b60e8d01d576d3bdc56f476b08f7160308cae96c&" alt="Logo">
     <h1>Phoenix Share</h1>
-    <div class="form-container">
-        <form id="loginForm" action="/create-account" method="POST">
-            <input type="text" id="username" name="username" class="input-field" placeholder="Username" required>
-            <input type="password" id="password" name="password" class="input-field" placeholder="Password" required>
-            <button type="submit" class="login-button">
-              Create Account
-            </button>
-        </form>
-    </div>
+    <div class="download-container">
+        <h2>Download File</h2>
+        <p>File Name: <%= fileName %></p>
+        <p>Uploaded By: <%= uploader_username %></p>
+        <p>Upload Time: <%= upload_time %></p>
+        <a href="/download-file/<%= fileName %>" class="download-button" data-fileName="<%= fileName %>">
+  Download
+</a>
+
+      </div>
     <div class="footer">
-        Already have an account? <a href="/" class="text-blue-500">Login now</a>
+        Return to <a href="/" class="text-blue-500">Home</a>
     </div>
-  <p id="Error" style="color: red;"></p> 
+  <p id="Error" style="color: red;"></p>
+    </div>
 </div>
-  <script>
-    const loginForm = document.getElementById('loginForm');
+<script>
+  const downloadLink = document.getElementById('downloadLink');
 const errorElement = document.getElementById('Error');
 
-loginForm.addEventListener('submit', async (event) => {
-    event.preventDefault(); // Prevent the default form submission behavior
+downloadLink.addEventListener('click', async (event) => {
+    event.preventDefault(); // Prevent the default link behavior
 
-    // Get form data
-    const formData = new FormData(loginForm);
+    // Get the file name from the data-fileName attribute
+    const fileName = downloadLink.getAttribute('data-fileName');
 
-    // Make a POST request to your server
+    // Make a GET request to download the file
     try {
-        const response = await fetch('/create-account', {
-            method: 'POST',
-            body: formData
-        });
-
+        const response = await fetch(`/download-file/${fileName}`);
         if (response.ok) {
-            // Form submission was successful, redirect the user to another page
-            window.location.href = '/';
+            // Form submission was successful, hide the error message
+            errorElement.style.display = 'none';
         } else {
             // Form submission failed, display the error message from the response
             const errorData = await response.text();
@@ -131,6 +130,6 @@ loginForm.addEventListener('submit', async (event) => {
     }
 });
 
-  </script>
+</script>
 </body>
 </html>

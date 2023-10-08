@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Phoenix Share">
     <meta name="author" content="Pheonix">
-    <link rel="icon" href="https://media.discordapp.net/attachments/1118813311308419162/1155386726102089778/6ac8a6c0-15be-4ab2-8a5e-63e411a68267.jpg">
+    <link rel="icon" href="https://media.discordapp.net/attachments/1118813310041739314/1159086282882953296/OIG.jpg?ex=651e9ab8&is=651d4938&hm=0faa48f79134b49fa889ff43c332d0759968f3cc76c9e55233b9c2490e892833&">
     <link href="
 https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
 " rel="stylesheet">
@@ -26,7 +26,7 @@ https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
         }
 
         .logo {
-            max-width: 100px;
+            max-width: 150px;
             height: auto;
         }
 
@@ -100,7 +100,7 @@ https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
 </head>
 <body>
 <div class="container">
-    <img class="logo" src="https://media.discordapp.net/attachments/1118813311308419162/1155386725850419242/6ac8a6c0-15be-4ab2-8a5e-63e411a68267-removebg-preview.png" alt="Logo">
+    <img class="logo" src="https://media.discordapp.net/attachments/1118813310041739314/1159086282312531999/98000387-53a3-418e-910d-68924d7b1eee-removebg-preview.png?ex=651e9ab8&is=651d4938&hm=52ed2e2882976572c32822a9b60e8d01d576d3bdc56f476b08f7160308cae96c&" alt="Logo">
     <h1>Phoenix Share</h1>
     <div class="form-container">
         <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
@@ -161,6 +161,27 @@ https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
       dragDropArea.classList.remove('dragging');
       fileInput.files = event.dataTransfer.files;
     });
+
+
+function copyToClipboard(button) {
+    const downloadLink = button.getAttribute('data-download-link');
+
+    const textArea = document.createElement('textarea');
+    textArea.value = downloadLink;
+
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    const copyButton = document.getElementById('copyButton');
+    copyButton.textContent = "Copied!";
+    setTimeout(() => {
+        copyButton.textContent = "Copy Download Link";
+    }, 3000); // Reset to "Copy Link" after 3 seconds
+}
+
+    
   </script>
 </body>
 </html>

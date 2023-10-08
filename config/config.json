@@ -1,0 +1,15 @@
+{
+"settings":{
+  "domain": "http://localhost:3000",
+  "secret": "your-secret_key",
+  "port": 3000, 
+  "mysql": false
+  }, 
+"mysql":{
+  "host": "", 
+  "port": 3000,
+  "user": "",
+  "password": "", 
+  "database": ""
+} 
+}

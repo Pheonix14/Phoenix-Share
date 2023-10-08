@@ -1,4 +1,4 @@
-![Logo](https://media.discordapp.net/attachments/1118813311308419162/1155391125906002031/1695537090270.png)
+![Logo](https://media.discordapp.net/attachments/1118813310041739314/1160459275932553236/20231008_113828_0000-removebg-preview.png)
 
 
 # Phoenix Share

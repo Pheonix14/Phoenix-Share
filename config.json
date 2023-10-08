@@ -1,5 +1,0 @@
-{
-  "domain": "your-domain",
-  "port": 3000,
-  "secret": "your-secret_key"
-}

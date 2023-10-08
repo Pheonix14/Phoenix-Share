@@ -15,6 +15,6 @@ export default createLogger({
   ),
   transports: [
     new transports.Console(), // Log to the console
-    new transports.File({ filename: 'logs.log' }) // Log to a file named logs.log
+    new transports.File({ filename: './database/logs.log' }) // Log to a file named logs.log
   ]
 });
