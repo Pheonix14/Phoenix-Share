@@ -21,7 +21,8 @@ app.set('view engine', 'ejs');
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, 'public'));
+app.use(express.static('public'))
 
 app.use(cookieParser()); // Use cookie-parser middleware
 app.use(session({
@@ -166,9 +167,8 @@ app.post('/upload', authenticate, async (req, res) => {
   }
 
   const file = req.files.file;
-const filenameWithoutExtension = file.name.split('.')[0];
   const fileExtension = path.extname(file.name);
-  const fileName = `${filenameWithoutExtension}${shortid.generate()}${fileExtension}`;
+  const fileName = `${file.name}-${shortid.generate()}${fileExtension}`;
  // const fileName = file.name;
   const filePath = path.join(__dirname, 'uploads', fileName);
   

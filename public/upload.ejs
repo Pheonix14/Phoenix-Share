@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Phoenix Share">
+    <meta name="author" content="Pheonix">
+    <link rel="icon" href="/icons/logo.jpeg">
+    <link href="
+https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
+" rel="stylesheet">
+   <link rel="stylesheet" href="/styles/upload.css">
+   <link rel="manifest" href="/manifest.json">
+    <title>Phoenix Share</title>
+</head>
+<body>
+<div class="container">
+    <img class="logo" src="/icons/logo_trans.png" alt="Logo">
+    <h1>Phoenix Share</h1>
+    <div class="form-container">
+        <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
+            <input type="file" name="file" id="fileInput" style="display: none;">
+            <label for="fileInput" class="upload-button">
+                Choose File
+            </label>
+            <div id="dragDropArea">
+                Drag and Drop Files Here
+            </div>
+            <button type="submit" class="upload-button">
+                Upload
+            </button>
+            <div class="footer">
+                Secured With End To End Encryption
+            </div>
+        </form>
+    <h2 id="downloadLink">Uploaded file will be displayed here.</h2>
+</div>
+</div>
+<script src="/scripts/upload.js"></script>
+</body>
+</html>

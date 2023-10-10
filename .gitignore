@@ -1,5 +1,6 @@
 node_modules
 logs.log
+config.json
 .replit
 replit.nix
 database.sqlite
