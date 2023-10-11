@@ -13,7 +13,7 @@ import logger from './logger.js';
 import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
 import shortid from 'shortid';
-import getDB from './database/connect.js';
+import { MongoClient } from 'mongodb';
 
 const app = express();
 
@@ -39,6 +39,23 @@ app.use(fileUpload({
   limits: { fileSize: uploadLimit }
 }));
 
+// connection to mongodb
+const client = new MongoClient(config.settings.mongoURI);
+
+let db;
+
+async function connectToMongoDB() {
+  try {
+    await client.connect();
+    db = client.db('phoenix-share');
+    logger.info('Connected to MongoDB');
+  } catch (error) {
+    logger.error('Error connecting to MongoDB: ', error);
+  }
+}
+
+connectToMongoDB();
+
 
 // Serve the login page
 app.get('/', checkLoggedIn, (req, res) => {
@@ -49,32 +66,31 @@ app.get('/login', checkLoggedIn, (req, res) => {
 });
 
 // Handle login form submission
-app.post('/login', async (req, res) => {
-const { username, password } = req.body;
-const db = await getDB();
-  const users = db.table("users")
-  // Retrieve the user object from the database
-  const user = await users.get(`users.${username}`);
+app.get('/login', checkLoggedIn, (req, res) => {
+  res.render('login');
+});
 
-  // Check if the user exists
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const usersCollection = db.collection('users');
+
+  const user = await usersCollection.findOne({ username });
+
   if (!user) {
     return res.status(400).send('Invalid username or password');
   }
 
-  // Compare the provided password with the stored hashed password
   bcrypt.compare(password, user.password, (err, result) => {
     if (err) {
-      console.error(err);
+      logger.error(err);
       return res.status(500).send('Internal Server Error');
     }
 
     if (result) {
-      // Passwords match, user is authenticated
-      req.session.loggedIn = true; // Save authentication state to session
-      res.cookie('loggedInUser', username); // Set loggedInUser cookie
+      req.session.loggedIn = true;
+      res.cookie('loggedInUser', username);
       return res.redirect('/upload');
     } else {
-      // Passwords do not match
       return res.status(400).send('Invalid username or password');
     }
   });
@@ -88,14 +104,12 @@ app.get('/create-account', (req, res) => {
 // Handle account creation form submission
 app.post('/create-account', async (req, res) => {
   const { username, password } = req.body;
-  const db = await getDB();
-  const users = db.table("users");
-  // Check if the username is already taken
-  
-  if (await users.has(`users.${username}`)) {
+  const usersCollection = db.collection('users');
+
+  if (await usersCollection.findOne({ username })) {
     return res.status(400).send('Username already taken');
   }
-  // Generate a salt and hash the password
+
   bcrypt.genSalt(10, async (err, salt) => {
     if (err) {
       logger.error(err);
@@ -108,23 +122,17 @@ app.post('/create-account', async (req, res) => {
         return res.status(500).send('Internal Server Error');
       }
 
-      // Create a new user object with the hashed password
       const user = {
         username: username,
         password: hash
       };
-      const db = await getDB();
-const users = db.table("users");
-      // Store the user object in the database
-      await users.set(`users.${username}`, user);
 
-      
-      // Redirect to the login page after successful account creation
+      await usersCollection.insertOne(user);
+
       res.redirect('/');
     });
   });
 });
-
 // Authentication middleware
 function authenticate(req, res, next) {
   // Check if the user is logged in
@@ -167,9 +175,15 @@ app.post('/upload', authenticate, async (req, res) => {
   }
 
   const file = req.files.file;
+  const lastSpaceIndex = file.name.lastIndexOf(' ');
+  let filen;
+if (lastSpaceIndex !== -1) {
+  filen = file.name.slice(0, lastSpaceIndex);
+ } else {
+    filen = file.name.split('.')[0];
+ }
   const fileExtension = path.extname(file.name);
-  const fileName = `${file.name}-${shortid.generate()}${fileExtension}`;
- // const fileName = file.name;
+  const fileName = `${filen}-${shortid.generate()}${fileExtension}`;
   const filePath = path.join(__dirname, 'uploads', fileName);
   
   const downloadLink = `${config.settings.domain}/download/${fileName}`;
@@ -184,12 +198,13 @@ const istDateTime = localDateTime.setZone('Asia/Kolkata');
 // Format the output
 const formattedOutput = `
 Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLocaleString(DateTime.TIME_24_SIMPLE)} IST (UTC/GMT+05:30)`;
- const db = await getDB();
-  const data = db.table("file_uploadData")
-  // Databasing upload time
- await data.set(`${fileName}.uploadTime`, formattedOutput);
-  // Databasing uploader username
-  await data.set(`${fileName}.uploader`, username);
+ const dataCollection = db.collection('file_uploadData');
+
+  await dataCollection.insertOne({
+    filename: fileName,
+    uploadTime: formattedOutput,
+    uploader: username
+  });
   // Encrypt the file
   const encryptedFilePath = encryptFile(file.data, filePath);
 
@@ -266,8 +281,7 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
     // delete the file 
     deleteFile(filePath);
  // delete fileUpload informations
- await data.set(`${fileName}.uploadTime`, null);
-  await data.set(`${fileName}.uploader`, null);
+ await dataCollection.deleteOne({ filename: fileName });
     // set file delete time in hours
   },5 * 60 * 60 * 1000);
 });
@@ -282,7 +296,7 @@ app.get('/qr-download/:fileName', (req, res) => {
 
   res.download(decryptedFilePath, (err) => {
     if (err) {
-      console.error(err);
+      logger.error(err);
       return res.status(500).send('Error occurred while downloading the file.');
     }
 
@@ -298,18 +312,17 @@ app.get(`/download/:fileName`, async (req, res) => {
   
 const { fileName } = req.params;
 const filePath = path.join(__dirname, 'uploads', fileName);
-  const db = await getDB();
-//  Getting upload time and uploader username
-const data = db.table("file_uploadData")
-  // getting upload time
- const upload_time = await data.get(`${fileName}.uploadTime`);
-  // getting uploader username
- const uploader_username = await data.get(`${fileName}.uploader`);
+
+//getting fileData from db
+  const dataCollection = db.collection('file_uploadData');
+  const fileData = await dataCollection.findOne({ filename: fileName });
+  const uploadTime = fileData.uploadTime;
+  const uploader = fileData.uploader;
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).render('error', { errorMessage: 'File not found' });
   }
-  res.render('download', { fileName, upload_time, uploader_username});
+  res.render('download', { fileName, uploadTime, uploader});
 });
 
 
@@ -322,7 +335,7 @@ const decryptedFilePath = decryptFile(filePath);
   // Send the file for download
   res.download(decryptedFilePath, (err) => {
     if (err) {
-      console.error(err);
+      logger.error(err);
       return res.status(500).send('Error occurred while downloading the file.');
     }
     logger.info(`Decrypted ${fileName} Is Now Deleting Because It's Downloaded.....`);

@@ -1,15 +1,8 @@
 {
 "settings":{
-  "domain": "https://phoenix-share.soumyajitdas7.repl.co",
-  "secret": "your-secret_key",
-  "port": 1000, 
-  "mysql": false
-  }, 
-"mysql":{
-  "host": "", 
-  "port": 3000,
-  "user": "",
-  "password": "", 
-  "database": ""
-} 
+  "domain": "http://localhost:3000",
+  "secret": "your-secret_key (a password of your choice)",
+  "mongoURI": "your-mongoURI",
+  "port": 3000
+  }
 }
