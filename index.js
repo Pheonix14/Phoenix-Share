@@ -14,6 +14,7 @@ import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
 import shortid from 'shortid';
 import { MongoClient } from 'mongodb';
+import ftp from 'basic-ftp';
 
 const app = express();
 
@@ -56,6 +57,26 @@ async function connectToMongoDB() {
 
 connectToMongoDB();
 
+let ftpClient;
+async function connectToFtp() {
+
+try {
+
+  ftpClient = new ftp.Client();
+
+  await ftpClient.access({
+        host: config.ftpserver.host,
+        user: config.ftpserver.user,
+        password: config.ftpserver.password,
+        secure: false,
+      });
+  logger.info('Connected to FTP server');
+} catch (error) {
+   logger.error(error)
+  }
+}
+
+connectToFtp();
 
 // Serve the login page
 app.get('/', checkLoggedIn, (req, res) => {
@@ -175,17 +196,17 @@ app.post('/upload', authenticate, async (req, res) => {
   }
 
   const file = req.files.file;
-  const lastSpaceIndex = file.name.lastIndexOf(' ');
-  let filen;
-if (lastSpaceIndex !== -1) {
-  filen = file.name.slice(0, lastSpaceIndex);
- } else {
-    filen = file.name.split('.')[0];
- }
   const fileExtension = path.extname(file.name);
-  const fileName = `${filen}-${shortid.generate()}${fileExtension}`;
+  let fileN = file.name.split('.')[0];
+  let fileN2;
+  if (fileN.includes(' ')) {
+  fileN2 = fileN.replace(/ /g, '');
+  } else {
+     fileN2 = fileN;
+  }
+  const fileName = `${fileN2}-${shortid.generate()}${fileExtension}`;
   const filePath = path.join(__dirname, 'uploads', fileName);
-  
+
   const downloadLink = `${config.settings.domain}/download/${fileName}`;
 const qrdownloadLink = `${config.settings.domain}/qr-download/${fileName}`;
 
@@ -197,7 +218,15 @@ const istDateTime = localDateTime.setZone('Asia/Kolkata');
 
 // Format the output
 const formattedOutput = `
-Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLocaleString(DateTime.TIME_24_SIMPLE)} IST (UTC/GMT+05:30)`;
+Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLocaleString(DateTime.TIME_24_SIMPLE)} IST (GMT+05:30)`;
+// Generate the QR code image
+  const qrCodeImage = await qrCode.toDataURL(qrdownloadLink);
+  const remotePath = `/Storage/Web-Uploads/${fileName}`;
+
+  logger.info(`${fileName} Is Just Uploaded By ${username} And Transferring To FTP Server.`)
+  
+  try {
+  
  const dataCollection = db.collection('file_uploadData');
 
   await dataCollection.insertOne({
@@ -206,10 +235,9 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
     uploader: username
   });
   // Encrypt the file
-  const encryptedFilePath = encryptFile(file.data, filePath);
+    const encryptedFilePath = encryptFile(file.data, filePath);
 
-  // Generate the QR code image
-  const qrCodeImage = await qrCode.toDataURL(qrdownloadLink);
+  await ftpClient.uploadFrom(encryptedFilePath, remotePath);
 
   // Display the file name, download link, and QR code on the upload success page
   res.send(`
@@ -274,25 +302,45 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
 </style>
 
 `);
-  logger.info(`${fileName} Is Just Uploaded By ${username}. And It's Have 5 Hours To Get Downloaded.`)
+    logger.info(`${fileName} Is Transferred To FTP Server. Npw It's Deleting From Local Storage...`)
+    deleteFile(filePath);
  // Auto deletion system
   setTimeout(async () => {
-    logger.info(`${fileName} Is Now Deleting After 5 Hours Of Upload....`);
-    // delete the file 
-    deleteFile(filePath);
+    logger.info(`${fileName} Is Now Deleting From FTP Server After 5 Hours Of Upload....`);
+    await ftpClient.remove(remotePath);
  // delete fileUpload informations
  await dataCollection.deleteOne({ filename: fileName });
     // set file delete time in hours
   },5 * 60 * 60 * 1000);
+
+} catch (err) {
+    console.error(err);
+    res.status(500).send('File upload failed.');
+  }
 });
-
 // Handle file download
-app.get('/qr-download/:fileName', (req, res) => {
+app.get('/qr-download/:fileName', async (req, res) => {
   const { fileName } = req.params;
-  const filePath = path.join(__dirname, 'uploads', fileName);
+  
+  const searchDirectory = "/Storage/Web-Uploads/";
+  const fileList = await ftpClient.list(searchDirectory);
+  const foundFile = fileList.find((file) => file.name === fileName);
+  if (!foundFile) {
+    return res.status(404).render('error', { errorMessage: 'File not found' });
+  }
 
+  const remotePath = `/Storage/Web-Uploads/${fileName}`;
+  const localPath = `./downloads/${fileName}`;
+try {
+ await ftpClient.download(localPath, remotePath); 
+  } catch (error) {
+   logger.error(error);
+  return res.status(500).send('Error occurred while downloading the file.');
+}
+    const localFilePath = path.join(__dirname, 'downloads', fileName);
+    
   // Decrypt the file
-  const decryptedFilePath = decryptFile(filePath);
+  const decryptedFilePath = decryptFile(localFilePath);
 
   res.download(decryptedFilePath, (err) => {
     if (err) {
@@ -306,31 +354,42 @@ app.get('/qr-download/:fileName', (req, res) => {
   });
 });
 
-
-
 app.get(`/download/:fileName`, async (req, res) => {
   
 const { fileName } = req.params;
-const filePath = path.join(__dirname, 'uploads', fileName);
+  
+const searchDirectory = "/Storage/Web-Uploads/";
+  const fileList = await ftpClient.list(searchDirectory);
+  const foundFile = fileList.find((file) => file.name === fileName);
+  
+  if (!foundFile) {
+    return res.status(404).render('error', { errorMessage: 'File not found' });
+  }
 
-//getting fileData from db
+  //getting fileData from db
   const dataCollection = db.collection('file_uploadData');
   const fileData = await dataCollection.findOne({ filename: fileName });
   const uploadTime = fileData.uploadTime;
   const uploader = fileData.uploader;
   
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).render('error', { errorMessage: 'File not found' });
-  }
   res.render('download', { fileName, uploadTime, uploader});
 });
 
 
-app.get(`/download-file/:fileName`, (req, res) => {
+app.get(`/download-file/:fileName`, async (req, res) => {
 const { fileName } = req.params;
-  const filePath = path.join(__dirname, 'uploads', fileName);
 
-const decryptedFilePath = decryptFile(filePath);
+  const remotePath = `/Storage/Web-Uploads/${fileName}`;
+  const localPath = `./downloads/${fileName}`;
+try {
+ await ftpClient.download(localPath, remotePath); 
+  } catch (error) {
+   logger.error(error);
+  return res.status(500).send('Error occurred while downloading the file.');
+}
+    const localFilePath = path.join(__dirname, 'downloads', fileName);
+
+const decryptedFilePath = decryptFile(localFilePath);
   
   // Send the file for download
   res.download(decryptedFilePath, (err) => {
@@ -339,8 +398,8 @@ const decryptedFilePath = decryptFile(filePath);
       return res.status(500).send('Error occurred while downloading the file.');
     }
     logger.info(`Decrypted ${fileName} Is Now Deleting Because It's Downloaded.....`);
-    deleteFile(decryptedFilePath);
-  });
+    deleteFile(decryptedFilePath)
+   });
 });
 
 app.use((req, res, next) => {
@@ -358,7 +417,7 @@ function deleteFile(filePath) {
   });
 }
 
-// Encrypt file
+// Encryption function
 function encryptFile(fileData, filePath) {
   const key = crypto.createHash('sha256').update(path.basename(filePath)).digest('hex').slice(0, 32);
   const iv = crypto.createHash('sha256').update(path.basename(filePath)).digest('hex').slice(0, 16);
@@ -375,7 +434,6 @@ function encryptFile(fileData, filePath) {
   return filePath;
 }
 
-// Decrypt file
 function decryptFile(filePath) {
   const encryptedData = fs.readFileSync(filePath);
 
