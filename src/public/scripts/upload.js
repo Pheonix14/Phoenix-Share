@@ -6,6 +6,8 @@
     form.addEventListener('submit', (event) => {
       event.preventDefault();
 
+downloadLink.textContent = "File uploading is under progress.... Please don't close or refresh the tab";
+      
       const formData = new FormData();
       formData.append('file', fileInput.files[0]);
 

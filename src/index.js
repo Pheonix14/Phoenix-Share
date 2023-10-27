@@ -4,17 +4,17 @@ import fileUpload from 'express-fileupload';
 import fs from 'fs';
 import path from 'path';
 import qrCode from 'qrcode';
-import config from './config/config.json' assert { type: "json" };
 import bcrypt from 'bcrypt';
 import session from 'express-session';
 import crypto from 'crypto';
 import ejs from 'ejs';
-import logger from './logger.js';
 import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
 import shortid from 'shortid';
-import { MongoClient } from 'mongodb';
-import ftp from 'basic-ftp';
+import log from './utils/console.js';
+import getDB from './utils/mongodb.js';
+import getClient from './utils/sftp.js';
+import config from './../config/config.json' assert { type: "json" };
 
 const app = express();
 
@@ -22,8 +22,8 @@ app.set('view engine', 'ejs');
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
-app.set('views', path.join(__dirname, 'public'));
-app.use(express.static('public'))
+app.set('views', path.join('./src', 'public'));
+app.use(express.static('./src/public'))
 
 app.use(cookieParser()); // Use cookie-parser middleware
 app.use(session({
@@ -40,43 +40,6 @@ app.use(fileUpload({
   limits: { fileSize: uploadLimit }
 }));
 
-// connection to mongodb
-const client = new MongoClient(config.settings.mongoURI);
-
-let db;
-
-async function connectToMongoDB() {
-  try {
-    await client.connect();
-    db = client.db('phoenix-share');
-    logger.info('Connected to MongoDB');
-  } catch (error) {
-    logger.error('Error connecting to MongoDB: ', error);
-  }
-}
-
-connectToMongoDB();
-
-let ftpClient;
-async function connectToFtp() {
-
-try {
-
-  ftpClient = new ftp.Client();
-
-  await ftpClient.access({
-        host: config.ftpserver.host,
-        user: config.ftpserver.user,
-        password: config.ftpserver.password,
-        secure: false,
-      });
-  logger.info('Connected to FTP server');
-} catch (error) {
-   logger.error(error)
-  }
-}
-
-connectToFtp();
 
 // Serve the login page
 app.get('/', checkLoggedIn, (req, res) => {
@@ -93,6 +56,8 @@ app.get('/login', checkLoggedIn, (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
+const db = await getDB();
+  
   const usersCollection = db.collection('users');
 
   const user = await usersCollection.findOne({ username });
@@ -103,7 +68,7 @@ app.post('/login', async (req, res) => {
 
   bcrypt.compare(password, user.password, (err, result) => {
     if (err) {
-      logger.error(err);
+      log(err);
       return res.status(500).send('Internal Server Error');
     }
 
@@ -125,6 +90,8 @@ app.get('/create-account', (req, res) => {
 // Handle account creation form submission
 app.post('/create-account', async (req, res) => {
   const { username, password } = req.body;
+  const db = await getDB();
+  
   const usersCollection = db.collection('users');
 
   if (await usersCollection.findOne({ username })) {
@@ -133,13 +100,13 @@ app.post('/create-account', async (req, res) => {
 
   bcrypt.genSalt(10, async (err, salt) => {
     if (err) {
-      logger.error(err);
+      log(err, 'error');
       return res.status(500).send('Internal Server Error');
     }
 
     bcrypt.hash(password, salt, async (err, hash) => {
       if (err) {
-        logger.error(err);
+        log(err, 'error');
         return res.status(500).send('Internal Server Error');
       }
 
@@ -190,12 +157,19 @@ app.get('/upload', authenticate, (req, res) => {
 // Handle file upload
 app.post('/upload', authenticate, async (req, res) => {
   const username = req.cookies.loggedInUser;
+  const db = await getDB();
+  const client = await getClient();
   // Check if a file was uploaded
   if (!req.files || !req.files.file) {
     return res.status(400).send('No file was uploaded.');
   }
-
-  const file = req.files.file;
+const file = req.files.file;
+  const fileSizeInMB = file.size / (1024 * 1024);
+      
+ if (fileSizeInMB > 500) {
+    return res.status(400).send('File upload limition is 500MB.');
+ }
+  
   const fileExtension = path.extname(file.name);
   let fileN = file.name.split('.')[0];
   let fileN2;
@@ -221,9 +195,9 @@ const formattedOutput = `
 Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLocaleString(DateTime.TIME_24_SIMPLE)} IST (GMT+05:30)`;
 // Generate the QR code image
   const qrCodeImage = await qrCode.toDataURL(qrdownloadLink);
-  const remotePath = `/Storage/Web-Uploads/${fileName}`;
+  const remotePath = `/home/phoenix/phoenix-share/storage/${fileName}`;
 
-  logger.info(`${fileName} Is Just Uploaded By ${username} And Transferring To FTP Server.`)
+  log(`${fileName} is just uploaded by ${username} and transferring to FTP server...`)
   
   try {
   
@@ -237,7 +211,7 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
   // Encrypt the file
     const encryptedFilePath = encryptFile(file.data, filePath);
 
-  await ftpClient.uploadFrom(encryptedFilePath, remotePath);
+  await client.fastPut(encryptedFilePath, remotePath);
 
   // Display the file name, download link, and QR code on the upload success page
   res.send(`
@@ -251,7 +225,6 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
 </div>
 
     <img src="${qrCodeImage}" alt="QR Code">
-    <p>Download the file before it gets deleted. It will be deleted in 5 hours.</p>
 </div>
 
 <style>
@@ -302,39 +275,30 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
 </style>
 
 `);
-    logger.info(`${fileName} Is Transferred To FTP Server. Npw It's Deleting From Local Storage...`)
+    log(`${fileName} is transferred to SFTP server. Now it's deleting from local storage...`)
     deleteFile(filePath);
- // Auto deletion system
-  setTimeout(async () => {
-    logger.info(`${fileName} Is Now Deleting From FTP Server After 5 Hours Of Upload....`);
-    await ftpClient.remove(remotePath);
- // delete fileUpload informations
- await dataCollection.deleteOne({ filename: fileName });
-    // set file delete time in hours
-  },5 * 60 * 60 * 1000);
-
 } catch (err) {
-    console.error(err);
+    log(err, 'error');
     res.status(500).send('File upload failed.');
   }
 });
 // Handle file download
 app.get('/qr-download/:fileName', async (req, res) => {
   const { fileName } = req.params;
-  
-  const searchDirectory = "/Storage/Web-Uploads/";
-  const fileList = await ftpClient.list(searchDirectory);
+  const client = await getClient();
+  const searchDirectory = "/home/pheonix/phoenix-share/storage/";
+const fileList = await client.list(searchDirectory);
   const foundFile = fileList.find((file) => file.name === fileName);
   if (!foundFile) {
     return res.status(404).render('error', { errorMessage: 'File not found' });
   }
 
-  const remotePath = `/Storage/Web-Uploads/${fileName}`;
-  const localPath = `./downloads/${fileName}`;
+  const remotePath = `/home/phoenix/phoenix-share/storage/${fileName}`;
+  const localPath = `./src/downloads/${fileName}`;
 try {
- await ftpClient.download(localPath, remotePath); 
+ await client.fastGet(remotePath, localPath); 
   } catch (error) {
-   logger.error(error);
+   log(error, 'error');
   return res.status(500).send('Error occurred while downloading the file.');
 }
     const localFilePath = path.join(__dirname, 'downloads', fileName);
@@ -344,12 +308,12 @@ try {
 
   res.download(decryptedFilePath, (err) => {
     if (err) {
-      logger.error(err);
+      log(err, 'error');
       return res.status(500).send('Error occurred while downloading the file.');
     }
 
     // Delete the decrypted file after download
-    logger.info(`Decrypted ${fileName} Is Now Deleting Because It's Downloaded.....`);
+    log(`Decrypted ${fileName} is now deleting because it's downloaded.....`);
     deleteFile(decryptedFilePath);
   });
 });
@@ -357,9 +321,11 @@ try {
 app.get(`/download/:fileName`, async (req, res) => {
   
 const { fileName } = req.params;
-  
-const searchDirectory = "/Storage/Web-Uploads/";
-  const fileList = await ftpClient.list(searchDirectory);
+  const db = await getDB();
+  const client = await getClient();
+  const file = await db.collection('files').findOne({ fileName });
+const searchDirectory = "/home/phoenix/phoenix-share/storage/";
+  const fileList = await client.list(searchDirectory);
   const foundFile = fileList.find((file) => file.name === fileName);
   
   if (!foundFile) {
@@ -378,14 +344,15 @@ const searchDirectory = "/Storage/Web-Uploads/";
 
 app.get(`/download-file/:fileName`, async (req, res) => {
 const { fileName } = req.params;
-
-  const remotePath = `/Storage/Web-Uploads/${fileName}`;
-  const localPath = `./downloads/${fileName}`;
+  const client = await getClient();
+  
+  const remotePath = `/home/phoenix/phoenix-share/storage/${fileName}`;
+  const localPath = `./src/downloads/${fileName}`;
 try {
- await ftpClient.download(localPath, remotePath); 
+ await client.fastGet(remotePath, localPath); 
   } catch (error) {
-   logger.error(error);
-  return res.status(500).send('Error occurred while downloading the file.');
+   log(error, 'error');
+  return res.status(500).render('error', { errorMessage: 'Error occurred while downloading the file.' });
 }
     const localFilePath = path.join(__dirname, 'downloads', fileName);
 
@@ -394,10 +361,10 @@ const decryptedFilePath = decryptFile(localFilePath);
   // Send the file for download
   res.download(decryptedFilePath, (err) => {
     if (err) {
-      logger.error(err);
+      log(err, 'error');
       return res.status(500).send('Error occurred while downloading the file.');
     }
-    logger.info(`Decrypted ${fileName} Is Now Deleting Because It's Downloaded.....`);
+    log(`Decrypted ${fileName} is now deleting because it's downloaded.....`);
     deleteFile(decryptedFilePath)
    });
 });
@@ -410,9 +377,9 @@ app.use((req, res, next) => {
 function deleteFile(filePath) {
   fs.unlink(filePath, (err) => {
     if (err) {
-      logger.error(err);
+      log(err, 'error');
     } else {
-      logger.info('File Deleted Successfully.');
+      log('File is deleted successfully.');
     }
   });
 }
@@ -455,5 +422,5 @@ function decryptFile(filePath) {
 
 // Start the server
 app.listen(config.settings.port, () => {
-  logger.info(`Server Started On Port ${config.settings.port}`);
+  log(`Server started on port ${config.settings.port}`);
 });

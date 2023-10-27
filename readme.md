@@ -17,7 +17,6 @@ This is a simple file sharing system built using Node.js and Express. It allows 
 - File upload: Users can select and upload files from their devices.
 - File download: Uploaded files can be downloaded using unique download links.
 - QR code generation: Quick sharing and scanning of files through QR codes.
-- File deletion: Automatically deletes files from the server after a set period of time or when downloaded.
 
 
 ## Prerequisites
@@ -26,6 +25,8 @@ Before running the system, ensure that you have the following installed:
 
 - Node.js (lts Version)
 - npm (Node Package Manager)
+- SFTP server
+
 ## Run Locally
 
 Clone the project:
@@ -42,7 +43,7 @@ Go to the project directory:
 
 Config:
 
- Fill the file called `config.json` with required details.
+Rename the ./config/example-config.json to ./config/config.json And fill configurations.
 
 Install dependencies:
 
@@ -52,10 +53,6 @@ Install dependencies:
 
 Start the server:
 
-```bash
-  node index.js
-```
-or
 ```bash
   npm run start
 ```
@@ -69,13 +66,10 @@ or
 4. On the upload page, select the file you want to share and click the "Upload" button.
 5. Once the upload is successful, you will be provided with a download link and a QR code for sharing.
 6. Share the download link or QR code with others to allow them to download the file.
-7. The file will be automatically deleted from the server after a set period of time.
 
 
 ## Customization
 
-- You can customize the upload limit by modifying the `uploadLimit` variable.
-- You can customize auto deletion time by modifying the `setTimeout` variable.
 - To change the server port, update the port number in `config.json` file.
 - To change the domain, update the domain url in `config.json`.
 - To change the cookie secret, update the secret key in `config.json`. 
