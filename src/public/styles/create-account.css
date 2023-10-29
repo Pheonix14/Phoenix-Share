@@ -64,3 +64,16 @@
             font-size: 14px;
             color: #ccc;
         }
+       .passwordToggle-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-top: 10px;
+        }
+
+      .passwordToggle {
+    cursor: pointer;
+    color: #4a90e2;
+    font-weight: bold;
+    margin-left: 10px;
+      }
