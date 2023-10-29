@@ -65,7 +65,10 @@ const db = await getDB();
   if (!user) {
     return res.status(400).send('Invalid username or password');
   }
-
+ if (user.status === 'banned') {
+    return res.status(400).send('Your account is banned or disabled. please contact to discord admins');
+ }
+ 
   bcrypt.compare(password, user.password, (err, result) => {
     if (err) {
       log(err);
@@ -89,11 +92,14 @@ app.get('/create-account', (req, res) => {
 
 // Handle account creation form submission
 app.post('/create-account', async (req, res) => {
-  const { username, password } = req.body;
+  const { email, username, password } = req.body;
   const db = await getDB();
   
   const usersCollection = db.collection('users');
-
+  
+  if (await usersCollection.findOne({ email })) {
+    return res.status(400).send('Account already exist in this email');
+  }
   if (await usersCollection.findOne({ username })) {
     return res.status(400).send('Username already taken');
   }
@@ -111,8 +117,10 @@ app.post('/create-account', async (req, res) => {
       }
 
       const user = {
+        email: email,
         username: username,
-        password: hash
+        password: hash, 
+        status: 'active'
       };
 
       await usersCollection.insertOne(user);
@@ -206,7 +214,8 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
   await dataCollection.insertOne({
     filename: fileName,
     uploadTime: formattedOutput,
-    uploader: username
+    uploader: username, 
+    status: 'normal'
   });
   // Encrypt the file
     const encryptedFilePath = encryptFile(file.data, filePath);
@@ -345,6 +354,7 @@ const searchDirectory = "/home/phoenix/phoenix-share/storage/";
 app.get(`/download-file/:fileName`, async (req, res) => {
 const { fileName } = req.params;
   const client = await getClient();
+  const db = await getDB();
   
   const remotePath = `/home/phoenix/phoenix-share/storage/${fileName}`;
   const localPath = `./src/downloads/${fileName}`;
@@ -357,13 +367,25 @@ try {
     const localFilePath = path.join(__dirname, 'downloads', fileName);
 
 const decryptedFilePath = decryptFile(localFilePath);
+
+const dataCollection = db.collection('file_uploadData');
+
+const localDateTime = DateTime.local();
+
+// Convert to IST (Indian Standard Time)
+const istDateTime = localDateTime.setZone('Asia/Kolkata');
+
+// Format the output
+const formattedOutput = `
+Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLocaleString(DateTime.TIME_24_SIMPLE)} IST (GMT+05:30)`;
   
   // Send the file for download
-  res.download(decryptedFilePath, (err) => {
+  res.download(decryptedFilePath, async (err) => {
     if (err) {
       log(err, 'error');
       return res.status(500).send('Error occurred while downloading the file.');
     }
+    await dataCollection.updateOne({ filename: fileName }, { $set: { lastDownload: 'new-uploader' } });
     log(`Decrypted ${fileName} is now deleting because it's downloaded.....`);
     deleteFile(decryptedFilePath)
    });
