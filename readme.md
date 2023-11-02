@@ -3,7 +3,7 @@
 
 # Phoenix Share
 
-This is a simple file sharing system built using Node.js and Express. It allows users to securely upload and share files with others.
+Share your files like never before with Phoenix Share. Phoenix Share is an open source file sharing platform that combines the simplicity of Express.js with the speed and security of a phoenix.
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 
@@ -32,7 +32,7 @@ Before running the system, ensure that you have the following installed:
 Clone the project:
 
 ```bash
-  git clone https://github.com/Pheonix14/Phoenix-Share.git
+  git clone https://github.com/Phoenix-Share/Phoenix-Share.git
 ```
 
 Go to the project directory:
