@@ -12,6 +12,7 @@
     <link href="
 https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
 " rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
    <link rel="stylesheet" href="/styles/upload.css">
    <link rel="manifest" href="/manifest.json">
     <title>Phoenix Share</title>
@@ -24,16 +25,16 @@ https://cdn.jsdelivr.net/npm/tailwindcss@3.3.3/tailwind.min.css
         <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data">
             <input type="file" name="file" id="fileInput" style="display: none;">
             <label for="fileInput" class="upload-button">
-                Choose File
+<i class="bi bi-file-earmark-plus-fill"></i> Choose File
             </label>
             <div id="dragDropArea">
-                Drag and Drop Files Here
+<i class="bi bi-send-arrow-up-fill"></i> Drag and Drop Files Here
             </div>
             <button type="submit" class="upload-button">
-                Upload
+<i class="bi bi-cloud-arrow-up-fill"></i> Upload
             </button>
             <div class="footer">
-               🔐 Secured With End To End Encryption
+<i class="bi bi-lock-fill"></i> Secured With Encryption
             </div>
         </form>
     <h2 id="downloadLink">Uploaded file will be displayed here.</h2>

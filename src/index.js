@@ -385,7 +385,7 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
       log(err, 'error');
       return res.status(500).send('Error occurred while downloading the file.');
     }
-    await dataCollection.updateOne({ filename: fileName }, { $set: { lastDownload: 'new-uploader' } });
+    await dataCollection.updateOne({ filename: fileName }, { $set: { lastDownload: formattedOutput } });
     log(`Decrypted ${fileName} is now deleting because it's downloaded.....`);
     deleteFile(decryptedFilePath)
    });
