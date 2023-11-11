@@ -6,6 +6,7 @@ import path from 'path';
 import qrCode from 'qrcode';
 import bcrypt from 'bcrypt';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import crypto from 'crypto';
 import ejs from 'ejs';
 import cookieParser from 'cookie-parser';
@@ -30,10 +31,21 @@ app.use(session({
   secret: config.settings.secret,
   resave: false,
   saveUninitialized: true,
-  cookie: { maxAge: 7200000 } // Set cookie expiration time in milliseconds (e.g., 1 day)
+  cookie: {
+    maxAge: 14 * 24 * 60 * 60
+  },
+  store: MongoStore.create({
+    mongoUrl: config.settings.mongoURI,
+    dbName: 'phoenix-share',
+    collectionName: 'sessions',
+    ttl: 14 * 24 * 60 * 60, 
+    autoRemove: 'native'
+  })
 }));
 
 app.use(bodyParser.urlencoded({ extended: false }));
+
+
 // Set the upload limit (default: 500MB)
 const uploadLimit = 500 * 1024 * 1024;
 app.use(fileUpload({
@@ -76,8 +88,9 @@ const db = await getDB();
     }
 
     if (result) {
-      req.session.loggedIn = true;
       res.cookie('loggedInUser', username);
+      req.session.user = username;
+      req.session.loggedIn = true;
       return res.redirect('/upload');
     } else {
       return res.status(400).send('Invalid username or password');
@@ -133,7 +146,6 @@ app.post('/create-account', async (req, res) => {
 function authenticate(req, res, next) {
   // Check if the user is logged in
   if (req.session.loggedIn) {
-    // User is authenticated, allow access to the next middleware or route
     next();
   } else {
     // Check if there is a loggedInUser cookie and restore the session
@@ -157,14 +169,14 @@ function checkLoggedIn(req, res, next) {
 
 // Serve the upload form page
 app.get('/upload', authenticate, (req, res) => {
-  const username = req.cookies.loggedInUser; // Get the loggedInUser cookie value
+  const username = req.session.user; // Get the user from the session
   res.render('upload', { username });
 });
 
 
 // Handle file upload
 app.post('/upload', authenticate, async (req, res) => {
-  const username = req.cookies.loggedInUser;
+  const username = req.session.user;
   const db = await getDB();
   const client = await getClient();
   // Check if a file was uploaded
