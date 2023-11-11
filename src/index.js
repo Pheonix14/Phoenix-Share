@@ -352,6 +352,8 @@ const searchDirectory = "/home/phoenix/phoenix-share/storage/";
   if (!foundFile) {
     return res.status(404).render('error', { errorMessage: 'File not found' });
   }
+const fileSizeInMB = foundFile.size / (1024 * 1024);
+  const fileSize = fileSizeInMB.toFixed(2);
 
   //getting fileData from db
   const dataCollection = db.collection('file_uploadData');
@@ -359,7 +361,7 @@ const searchDirectory = "/home/phoenix/phoenix-share/storage/";
   const uploadTime = fileData.uploadTime;
   const uploader = fileData.uploader;
   
-  res.render('download', { fileName, uploadTime, uploader});
+  res.render('download', { fileName, uploadTime, uploader, fileSize});
 });
 
 
@@ -379,7 +381,7 @@ try {
     const localFilePath = path.join(__dirname, 'downloads', fileName);
 
 const decryptedFilePath = decryptFile(localFilePath);
-
+       
 const dataCollection = db.collection('file_uploadData');
 
 const localDateTime = DateTime.local();
@@ -390,6 +392,14 @@ const istDateTime = localDateTime.setZone('Asia/Kolkata');
 // Format the output
 const formattedOutput = `
 Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLocaleString(DateTime.TIME_24_SIMPLE)} IST (GMT+05:30)`;
+  
+res.set({
+    'Accept-Ranges': 'bytes',
+    'Content-Disposition': `attachment; filename="${fileName }"`,
+    'Transfer-Encoding': 'chunked',
+    'Expires': 0,
+    'Cache-Control': 'no-cache'
+  });
   
   // Send the file for download
   res.download(decryptedFilePath, async (err) => {
