@@ -13,6 +13,8 @@ await client.connect({
       port: 22, // SFTP typically uses port 22
       username: config.sftpserver.user,
       password: config.sftpserver.password,
+      keepaliveInterval: 30000, 
+      keepaliveCountMax: 3 
     });
 
     log('Connected to SFTP server');
