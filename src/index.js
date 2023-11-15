@@ -12,6 +12,7 @@ import ejs from 'ejs';
 import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
 import shortid from 'shortid';
+import https from 'https';
 import log from './utils/console.js';
 import getDB from './utils/mongodb.js';
 import getClient from './utils/sftp.js';
@@ -25,6 +26,13 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 app.set('views', path.join('./src', 'public'));
 app.use(express.static('./src/public'))
+
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/dash.phoenixshare.net/privkey.pem'), // Replace with the path to your private key file
+  cert: fs.readFileSync('/etc/letsencrypt/live/dash.phoenixshare.net/fullchain.pem'), // Replace with the path to your certificate file
+};
+
+const server = https.createServer(options, app);
 
 app.use(cookieParser()); // Use cookie-parser middleware
 app.use(session({
@@ -465,6 +473,6 @@ function decryptFile(filePath) {
 }
 
 // Start the server
-app.listen(config.settings.port, () => {
-  log(`Server started on port ${config.settings.port}`);
+server.listen(config.settings.port, () => {
+    log(`Server is running on port ${config.settings.port}`);
 });
