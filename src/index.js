@@ -237,7 +237,7 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
   const qrCodeImage = await qrCode.toDataURL(qrdownloadLink);
   const remotePath = `${config.settings.remotePath}/${fileName}`;
 
-  log(`${fileName} is just uploaded by ${username} and transferring to FTP server...`)
+  log(`${fileName} is just uploaded by ${username} and transferring to SFTP server...`)
   
   try {
   
@@ -335,7 +335,7 @@ const fileList = await client.list(searchDirectory);
   }
 
   const remotePath = `${config.settings.remotePath}/${fileName}`;
-  const localPath = `./src/downloads/${fileName}`;
+  const localPath = `${__dirname}/downloads/${fileName}`;
 try {
  await client.fastGet(remotePath, localPath); 
   } catch (error) {
@@ -399,7 +399,7 @@ const { fileName } = req.params;
   const db = await getDB();
   
   const remotePath = `${config.settings.remotePath}/${fileName}`;
-  const localPath = `./src/downloads/${fileName}`;
+  const localPath = `${__dirname}/downloads/${fileName}`;
 try {
  await client.fastGet(remotePath, localPath); 
   } catch (error) {
