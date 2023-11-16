@@ -13,6 +13,7 @@ import cookieParser from 'cookie-parser';
 import { DateTime } from 'luxon';
 import shortid from 'shortid';
 import https from 'https';
+import rateLimit from 'express-rate-limit';
 import log from './utils/console.js';
 import getDB from './utils/mongodb.js';
 import getClient from './utils/sftp.js';
@@ -26,13 +27,14 @@ const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
 app.set('views', path.join('./src', 'public'));
 app.use(express.static('./src/public'))
+app.use(bodyParser.json());
 
 const options = {
-  key: fs.readFileSync('/etc/letsencrypt/live/dash.phoenixshare.net/privkey.pem'), // Replace with the path to your private key file
-  cert: fs.readFileSync('/etc/letsencrypt/live/dash.phoenixshare.net/fullchain.pem'), // Replace with the path to your certificate file
+  key: fs.readFileSync(`${config.settings.sslPath}/privkey.pem`), // Replace with the path to your private key file
+  cert: fs.readFileSync(`${config.settings.sslPath}/fullchain.pem`), // Replace with the path to your certificate file
 };
+ const server = https.createServer(options, app);
 
-const server = https.createServer(options, app);
 
 app.use(cookieParser()); // Use cookie-parser middleware
 app.use(session({
@@ -53,6 +55,14 @@ app.use(session({
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
+
+const rateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour window
+  max: 250, // Limit each IP to 250 requests per hour
+  message: 'Too many requests from this IP, please try again later.'
+});
+
+app.use(rateLimiter);
 
 // Set the upload limit (default: 500MB)
 const uploadLimit = 500 * 1024 * 1024;
@@ -223,7 +233,7 @@ const formattedOutput = `
 Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLocaleString(DateTime.TIME_24_SIMPLE)} IST (GMT+05:30)`;
 // Generate the QR code image
   const qrCodeImage = await qrCode.toDataURL(qrdownloadLink);
-  const remotePath = `/home/phoenix/phoenix-share/storage/${fileName}`;
+  const remotePath = `${config.settings.remotePath}/${fileName}`;
 
   log(`${fileName} is just uploaded by ${username} and transferring to FTP server...`)
   
@@ -315,14 +325,14 @@ Date: ${istDateTime.toLocaleString(DateTime.DATE_FULL)} Time: ${istDateTime.toLo
 app.get('/qr-download/:fileName', async (req, res) => {
   const { fileName } = req.params;
   const client = await getClient();
-  const searchDirectory = "/home/pheonix/phoenix-share/storage/";
+  const searchDirectory = `${config.settings.remotePath}`;
 const fileList = await client.list(searchDirectory);
   const foundFile = fileList.find((file) => file.name === fileName);
   if (!foundFile) {
     return res.status(404).render('error', { errorMessage: 'File not found' });
   }
 
-  const remotePath = `/home/phoenix/phoenix-share/storage/${fileName}`;
+  const remotePath = `${config.settings.remotePath}/${fileName}`;
   const localPath = `./src/downloads/${fileName}`;
 try {
  await client.fastGet(remotePath, localPath); 
@@ -335,6 +345,14 @@ try {
   // Decrypt the file
   const decryptedFilePath = decryptFile(localFilePath);
 
+res.set({
+    'Accept-Ranges': 'bytes',
+    'Content-Disposition': `attachment; filename="${fileName }"`,
+    'Transfer-Encoding': 'chunked',
+    'Expires': 0,
+    'Cache-Control': 'no-cache'
+  });
+  
   res.download(decryptedFilePath, (err) => {
     if (err) {
       log(err, 'error');
@@ -353,7 +371,7 @@ const { fileName } = req.params;
   const db = await getDB();
   const client = await getClient();
   const file = await db.collection('files').findOne({ fileName });
-const searchDirectory = "/home/phoenix/phoenix-share/storage/";
+const searchDirectory = `${config.settings.remotePath}`;
   const fileList = await client.list(searchDirectory);
   const foundFile = fileList.find((file) => file.name === fileName);
   
@@ -378,7 +396,7 @@ const { fileName } = req.params;
   const client = await getClient();
   const db = await getDB();
   
-  const remotePath = `/home/phoenix/phoenix-share/storage/${fileName}`;
+  const remotePath = `${config.settings.remotePath}/${fileName}`;
   const localPath = `./src/downloads/${fileName}`;
 try {
  await client.fastGet(remotePath, localPath); 
@@ -472,7 +490,6 @@ function decryptFile(filePath) {
   return decryptedFilePath;
 }
 
-// Start the server
 server.listen(config.settings.port, () => {
     log(`Server is running on port ${config.settings.port}`);
 });
