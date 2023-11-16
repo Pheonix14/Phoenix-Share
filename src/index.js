@@ -25,8 +25,8 @@ app.set('view engine', 'ejs');
 
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 
-app.set('views', path.join('./src', 'public'));
-app.use(express.static('./src/public'))
+app.set('views', path.join(__dirname, 'public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json());
 
 const options = {
@@ -35,6 +35,7 @@ const options = {
 };
  const server = https.createServer(options, app);
 
+app.use(cookieParser());
 
 app.use(cookieParser()); // Use cookie-parser middleware
 app.use(session({
@@ -62,6 +63,7 @@ const rateLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again later.'
 });
 
+app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal'])
 app.use(rateLimiter);
 
 // Set the upload limit (default: 500MB)
