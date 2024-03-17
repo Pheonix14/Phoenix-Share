@@ -32,7 +32,7 @@ Before running the system, ensure that you have the following installed:
 Clone the project:
 
 ```bash
-  git clone https://github.com/Phoenix-Share/Phoenix-Share.git
+  git clone https://github.com/Pheonix14/Phoenix-Share.git
 ```
 
 Go to the project directory:
